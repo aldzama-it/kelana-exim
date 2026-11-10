@@ -1,0 +1,40 @@
+# Environment and secrets
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Laravel generated and local
+/vendor/
+/node_modules/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/logs/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/testing/
+/storage/framework/views/
+/bootstrap/cache/*.php
+
+# Local databases and exports
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.sql.gz
+/backups/
+/dumps/
+
+# Build output and IDE
+/public/build/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+*.log
+.phpunit.result.cache
+/.phpunit.cache

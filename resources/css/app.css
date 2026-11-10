@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+@source '../views/**/*.blade.php';
+@source '../js/**/*.{ts,tsx}';
+
+@theme {
+    --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --color-primary: #3152A3;
+    --color-primary-dark: #243F82;
+    --color-primary-soft: #E8EEFB;
+    --color-primary-selected: #EEF3FD;
+    --color-app-bg: #F8FAFC;
+    --color-card: #FFFFFF;
+    --color-text-main: #0F172A;
+    --color-text-muted: #64748B;
+    --color-line: #E2E8F0;
+    
+    --color-status-warn-bg: #FFF1D6;
+    --color-status-warn-text: #8A4B00;
+    --color-status-success-bg: #E3F4EA;
+    --color-status-success-text: #1F6B3F;
+    --color-status-danger-bg: #FDE3E4;
+    --color-status-danger-text: #A3151B;
+}
+
+body {
+    background-color: #F8FAFC;
+    color: var(--color-text-main);
+    font-family: 'Poppins', sans-serif;
+}
