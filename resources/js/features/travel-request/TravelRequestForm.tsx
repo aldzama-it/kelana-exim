@@ -38,6 +38,7 @@ import {
     ArrowUpDown,
 } from 'lucide-react';
 import CityCombobox from '@/components/ui/CityCombobox';
+import TransportHubCombobox from '@/components/ui/TransportHubCombobox';
 import kelanaSwal, { showWarningAlert, showSuccessAlert, showErrorAlert } from '@/lib/swal';
 import {
     downloadPassengerTemplate,
@@ -2458,67 +2459,57 @@ export default function TravelRequestForm({
                                             </div>
                                         </div>
 
-                                        {/* Baris 1: Rute Etape (Asal -> Tujuan) */}
+                                        {/* Baris 1: Rute Etape (Asal -> Tujuan) dengan Combobox Hub Dinamis Sesuai Moda */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#F1F5F9]">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">
-                                                    Titik / Lokasi Keberangkatan <span className="text-rose-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={leg.originLocation}
-                                                    onChange={(e) =>
-                                                        handleTransportLegChange(
-                                                            activeTransportTab,
-                                                            legIndex,
-                                                            'originLocation',
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder={
-                                                        leg.transportMode === 'Pesawat'
-                                                            ? 'Contoh: Jakarta / Bandara Soekarno-Hatta (CGK)'
-                                                            : leg.transportMode === 'Kereta'
-                                                            ? 'Contoh: Jakarta / Stasiun Gambir (GMR)'
-                                                            : 'Contoh: Kota / Terminal / Pelabuhan Asal'
-                                                    }
-                                                    className="w-full px-3.5 py-2.5 bg-white text-xs text-[#0F172A] border border-[#CBD5E1] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3152A3] transition"
-                                                />
-                                                <span className="text-[10px] text-[#64748B] mt-1 block">
-                                                    Kota, bandara, stasiun, atau pelabuhan asal untuk moda ini.
-                                                </span>
-                                            </div>
+                                            <TransportHubCombobox
+                                                label="Titik / Lokasi Keberangkatan"
+                                                mode={leg.transportMode}
+                                                value={leg.originLocation}
+                                                onChange={(val) =>
+                                                    handleTransportLegChange(
+                                                        activeTransportTab,
+                                                        legIndex,
+                                                        'originLocation',
+                                                        val
+                                                    )
+                                                }
+                                                excludeValue={leg.destinationLocation}
+                                                required
+                                                helperText={`Pilih ${
+                                                    leg.transportMode === 'Pesawat'
+                                                        ? 'bandara'
+                                                        : leg.transportMode === 'Kereta'
+                                                        ? 'stasiun'
+                                                        : leg.transportMode === 'Bus'
+                                                        ? 'terminal bus / pool'
+                                                        : 'pelabuhan'
+                                                } atau ketik lokasi asal.`}
+                                            />
 
-                                            <div>
-                                                <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">
-                                                    Titik / Lokasi Tujuan <span className="text-rose-500">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={leg.destinationLocation}
-                                                    onChange={(e) =>
-                                                        handleTransportLegChange(
-                                                            activeTransportTab,
-                                                            legIndex,
-                                                            'destinationLocation',
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder={
-                                                        leg.transportMode === 'Pesawat'
-                                                            ? 'Contoh: Surabaya / Bandara Juanda (SUB)'
-                                                            : leg.transportMode === 'Kereta'
-                                                            ? 'Contoh: Surabaya / Stasiun Pasar Turi (SBI)'
-                                                            : 'Contoh: Kota / Terminal / Pelabuhan Tujuan'
-                                                    }
-                                                    className="w-full px-3.5 py-2.5 bg-white text-xs text-[#0F172A] border border-[#CBD5E1] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3152A3] transition"
-                                                />
-                                                <span className="text-[10px] text-[#64748B] mt-1 block">
-                                                    Kota, bandara, stasiun, atau pelabuhan tujuan untuk moda ini.
-                                                </span>
-                                            </div>
+                                            <TransportHubCombobox
+                                                label="Titik / Lokasi Tujuan"
+                                                mode={leg.transportMode}
+                                                value={leg.destinationLocation}
+                                                onChange={(val) =>
+                                                    handleTransportLegChange(
+                                                        activeTransportTab,
+                                                        legIndex,
+                                                        'destinationLocation',
+                                                        val
+                                                    )
+                                                }
+                                                excludeValue={leg.originLocation}
+                                                required
+                                                helperText={`Pilih ${
+                                                    leg.transportMode === 'Pesawat'
+                                                        ? 'bandara'
+                                                        : leg.transportMode === 'Kereta'
+                                                        ? 'stasiun'
+                                                        : leg.transportMode === 'Bus'
+                                                        ? 'terminal bus / pool'
+                                                        : 'pelabuhan'
+                                                } atau ketik lokasi tujuan.`}
+                                            />
                                         </div>
 
                                         {/* Baris 2: Tanggal, Preferensi Waktu, dan Jam Spesifik */}
