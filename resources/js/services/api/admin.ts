@@ -38,6 +38,16 @@ export interface RbacMatrixData {
     roles: { value: UserRole; label: string }[];
 }
 
+export class AdminApiError extends Error {
+    errors?: Record<string, string[]>;
+
+    constructor(message: string, errors?: Record<string, string[]>) {
+        super(message);
+        this.name = 'AdminApiError';
+        this.errors = errors;
+    }
+}
+
 export const adminApi = {
     /**
      * Mengambil daftar seluruh pengguna dan peran.
@@ -71,13 +81,14 @@ export const adminApi = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
             },
             body: JSON.stringify(data),
         });
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || 'Gagal menambahkan pengguna baru.');
+            throw new AdminApiError(result.message || 'Gagal menambahkan pengguna baru.', result.errors);
         }
     },
 
@@ -92,13 +103,14 @@ export const adminApi = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
             },
             body: JSON.stringify(data),
         });
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || 'Gagal memperbarui data pengguna.');
+            throw new AdminApiError(result.message || 'Gagal memperbarui data pengguna.', result.errors);
         }
     },
 
@@ -112,6 +124,7 @@ export const adminApi = {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
             },
         });
 
@@ -155,6 +168,7 @@ export const adminApi = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
             },
             body: JSON.stringify({ permissions }),
         });

@@ -14,7 +14,7 @@ import {
     UserCheck,
     Lock,
 } from 'lucide-react';
-import { adminApi, ManagedUser, RbacMatrixData } from '@/services/api/admin';
+import { adminApi, AdminApiError, ManagedUser, RbacMatrixData } from '@/services/api/admin';
 import { UserRole } from '@/types/auth';
 
 type SettingsTab = 'users' | 'rbac' | 'hierarchy';
@@ -33,6 +33,8 @@ export default function SettingsPage(): React.JSX.Element {
     // State Modal Tambah/Edit User
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+    const [modalError, setModalError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState({
         name: '',
         username: '',
@@ -83,6 +85,9 @@ export default function SettingsPage(): React.JSX.Element {
             supervisor_id: '',
             is_active: true,
         });
+        setModalError(null);
+        setFieldErrors({});
+        setFeedbackMessage(null);
         setIsModalOpen(true);
     };
 
@@ -99,13 +104,35 @@ export default function SettingsPage(): React.JSX.Element {
             supervisor_id: user.supervisor_id ?? '',
             is_active: user.is_active,
         });
+        setModalError(null);
+        setFieldErrors({});
+        setFeedbackMessage(null);
         setIsModalOpen(true);
     };
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setModalError(null);
+        setFieldErrors({});
+
+        // Validasi frontend untuk panjang password
+        if (editingUser) {
+            if (formData.password && formData.password.length < 6) {
+                const errMsg = 'Password baru minimal harus 6 karakter.';
+                setFieldErrors({ password: errMsg });
+                setModalError(errMsg);
+                return;
+            }
+        } else {
+            if (!formData.password || formData.password.length < 6) {
+                const errMsg = 'Password awal wajib diisi minimal 6 karakter.';
+                setFieldErrors({ password: errMsg });
+                setModalError(errMsg);
+                return;
+            }
+        }
+
         setIsSubmitting(true);
-        setFeedbackMessage(null);
 
         try {
             const payload: any = {
@@ -134,8 +161,24 @@ export default function SettingsPage(): React.JSX.Element {
             setIsModalOpen(false);
             await loadData();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Gagal menyimpan data pengguna.';
-            setFeedbackMessage({ type: 'error', text: msg });
+            let errorMsg = 'Gagal menyimpan data pengguna.';
+            if (err instanceof AdminApiError) {
+                errorMsg = err.message;
+                if (err.errors) {
+                    const extractedErrors: Record<string, string> = {};
+                    for (const [key, list] of Object.entries(err.errors)) {
+                        if (Array.isArray(list) && list.length > 0) {
+                            extractedErrors[key] = list[0];
+                        }
+                    }
+                    setFieldErrors(extractedErrors);
+                }
+            } else if (err instanceof Error) {
+                errorMsg = err.message;
+            }
+
+            // Notifikasi error ditampilkan di dalam modal agar langsung terlihat
+            setModalError(errorMsg);
         } finally {
             setIsSubmitting(false);
         }
@@ -640,6 +683,23 @@ export default function SettingsPage(): React.JSX.Element {
                             </button>
                         </div>
 
+                        {/* Banner Notifikasi Error di Dalam Modal (Tampil tepat di atas formulir) */}
+                        {modalError && (
+                            <div className="mt-4 p-3.5 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 flex items-start justify-between gap-2.5 animate-in fade-in duration-150">
+                                <div className="flex items-start gap-2.5">
+                                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed">{modalError}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalError(null)}
+                                    className="p-1 hover:opacity-70 text-rose-600 cursor-pointer shrink-0"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleFormSubmit} className="mt-4 space-y-4 text-xs">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
@@ -648,10 +708,29 @@ export default function SettingsPage(): React.JSX.Element {
                                         type="text"
                                         required
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, name: e.target.value });
+                                            if (fieldErrors.name) {
+                                                setFieldErrors((prev) => {
+                                                    const copy = { ...prev };
+                                                    delete copy.name;
+                                                    return copy;
+                                                });
+                                            }
+                                        }}
                                         placeholder="cth: Ahmad Fauzi"
-                                        className="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#3152A3]"
+                                        className={`w-full px-3 py-2 rounded-xl border text-[#0F172A] focus:outline-none focus:ring-2 transition ${
+                                            fieldErrors.name
+                                                ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+                                                : 'border-[#CBD5E1] focus:ring-[#3152A3]'
+                                        }`}
                                     />
+                                    {fieldErrors.name && (
+                                        <p className="text-[11px] text-rose-600 font-medium mt-1.5 flex items-center gap-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{fieldErrors.name}</span>
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block font-medium text-[#1E293B] mb-1">Username</label>
@@ -659,10 +738,29 @@ export default function SettingsPage(): React.JSX.Element {
                                         type="text"
                                         required
                                         value={formData.username}
-                                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, username: e.target.value });
+                                            if (fieldErrors.username) {
+                                                setFieldErrors((prev) => {
+                                                    const copy = { ...prev };
+                                                    delete copy.username;
+                                                    return copy;
+                                                });
+                                            }
+                                        }}
                                         placeholder="cth: fauzi"
-                                        className="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#3152A3]"
+                                        className={`w-full px-3 py-2 rounded-xl border text-[#0F172A] focus:outline-none focus:ring-2 transition ${
+                                            fieldErrors.username
+                                                ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+                                                : 'border-[#CBD5E1] focus:ring-[#3152A3]'
+                                        }`}
                                     />
+                                    {fieldErrors.username && (
+                                        <p className="text-[11px] text-rose-600 font-medium mt-1.5 flex items-center gap-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{fieldErrors.username}</span>
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -673,10 +771,29 @@ export default function SettingsPage(): React.JSX.Element {
                                         type="email"
                                         required
                                         value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, email: e.target.value });
+                                            if (fieldErrors.email) {
+                                                setFieldErrors((prev) => {
+                                                    const copy = { ...prev };
+                                                    delete copy.email;
+                                                    return copy;
+                                                });
+                                            }
+                                        }}
                                         placeholder="fauzi@kelana.id"
-                                        className="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#3152A3]"
+                                        className={`w-full px-3 py-2 rounded-xl border text-[#0F172A] focus:outline-none focus:ring-2 transition ${
+                                            fieldErrors.email
+                                                ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+                                                : 'border-[#CBD5E1] focus:ring-[#3152A3]'
+                                        }`}
                                     />
+                                    {fieldErrors.email && (
+                                        <p className="text-[11px] text-rose-600 font-medium mt-1.5 flex items-center gap-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{fieldErrors.email}</span>
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block font-medium text-[#1E293B] mb-1">No. WhatsApp</label>
@@ -743,10 +860,29 @@ export default function SettingsPage(): React.JSX.Element {
                                     type="password"
                                     required={!editingUser}
                                     value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, password: e.target.value });
+                                        if (fieldErrors.password) {
+                                            setFieldErrors((prev) => {
+                                                const copy = { ...prev };
+                                                delete copy.password;
+                                                return copy;
+                                            });
+                                        }
+                                    }}
                                     placeholder={editingUser ? '••••••••' : 'Minimal 6 karakter'}
-                                    className="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#3152A3]"
+                                    className={`w-full px-3 py-2 rounded-xl border text-[#0F172A] focus:outline-none focus:ring-2 transition ${
+                                        fieldErrors.password
+                                            ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+                                            : 'border-[#CBD5E1] focus:ring-[#3152A3]'
+                                    }`}
                                 />
+                                {fieldErrors.password && (
+                                    <p className="text-[11px] text-rose-600 font-medium mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-150">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{fieldErrors.password}</span>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-2 pt-2">
