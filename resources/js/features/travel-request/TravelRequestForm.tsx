@@ -1268,23 +1268,42 @@ export default function TravelRequestForm({
             }
 
             const requestNumber = result.data?.travel_request?.request_number || 'Pengajuan Baru';
+            const createdId = result.data?.travel_request?.id;
+            const previewUrl = `/travel-requests/${createdId}/preview`;
 
-            await kelanaSwal.fire({
+            const alertResult = await kelanaSwal.fire({
                 title: 'Pengajuan Berhasil Dikirim!',
                 html: `
-                    <div class="text-center space-y-2">
-                        <p class="text-xs text-[#0F172A]">Pengajuan dinas Anda telah berhasil disimpan dengan nomor registrasi:</p>
-                        <div class="inline-block px-3 py-1.5 bg-[#EEF2F6] text-[#3152A3] font-mono font-bold text-sm rounded-xl border border-[#CBD5E1]">
-                            ${requestNumber}
+                    <div class="text-left space-y-3 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-[#0F172A]">
+                        <div class="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                            <span class="text-xs text-emerald-950 font-medium">No. Registrasi:</span>
+                            <span class="px-2.5 py-1 bg-white text-[#3152A3] font-mono font-bold text-xs rounded-lg border border-emerald-200 shadow-2xs">
+                                ${requestNumber}
+                            </span>
                         </div>
-                        <p class="text-[11px] text-[#64748B] pt-2">
-                            Pemberitahuan persetujuan telah otomatis diteruskan ke Atasan langsung Anda.
+                        <p class="text-xs text-emerald-950 leading-relaxed">
+                            Formulir resmi <b>TICKET BOOKING REQUEST (FRM-AZM-402-003)</b> telah berhasil dibuat secara otomatis lengkap dengan tabel approval dan data perjalanan Anda.
                         </p>
+                        <div class="p-2.5 bg-white border border-emerald-200 rounded-xl text-[11px] text-[#475569] flex items-center justify-between">
+                            <span>Status Dokumen:</span>
+                            <span class="font-bold text-[#166534] bg-emerald-100 px-2 py-0.5 rounded-full">Siap Cetak / PDF</span>
+                        </div>
                     </div>
+                    <p class="text-[11px] text-[#64748B] mt-3">
+                        Anda dapat langsung membuka dan mengunduh berkas PDF formulir ini sekarang.
+                    </p>
                 `,
                 icon: 'success',
-                confirmButtonText: 'Selesai',
+                showCancelButton: true,
+                confirmButtonText: 'Buka / Cetak PDF Formulir',
+                cancelButtonText: 'Selesai',
+                confirmButtonColor: '#3152A3',
+                cancelButtonColor: '#64748B',
             });
+
+            if (alertResult.isConfirmed && createdId) {
+                window.open(previewUrl, '_blank');
+            }
 
             if (onSubmitSuccess) {
                 onSubmitSuccess();

@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
     // Pengajuan Perjalanan Dinas (Travel Requests)
     Route::middleware('web')->group(function () {
         Route::post('/travel-requests', [TravelRequestController::class, 'store']);
+        Route::get('/travel-requests/{id}/preview', [TravelRequestController::class, 'previewPdf']);
     });
 
     // Manajemen Pengguna & RBAC (Khusus Superadmin)

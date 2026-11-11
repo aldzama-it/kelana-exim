@@ -131,8 +131,20 @@ class TravelRequestController extends Controller
             'message' => 'Pengajuan perjalanan dinas berhasil dikirim.',
             'data' => [
                 'travel_request' => $travelRequest->fresh(['approvals', 'requester', 'passengers', 'transports']),
+                'preview_url' => url("/travel-requests/{$travelRequest->id}/preview"),
             ],
         ], 201);
+    }
+
+    /**
+     * Menampilkan pratinjau formulir resmi PDF / Cetak (FRM-AZM-402-003).
+     */
+    public function previewPdf(Request $request, int|string $id)
+    {
+        $travelRequest = TravelRequest::with(['requester', 'passengers', 'transports', 'approvals.approver'])
+            ->findOrFail($id);
+
+        return view('pdf.travel-request', compact('travelRequest'));
     }
 }
 
