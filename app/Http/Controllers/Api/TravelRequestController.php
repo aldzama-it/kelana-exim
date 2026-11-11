@@ -44,6 +44,7 @@ class TravelRequestController extends Controller
             'passengers.*.department' => ['nullable', 'string', 'max:100'],
             'passengers.*.division' => ['nullable', 'string', 'max:100'],
             'passengers.*.ktp_file_path' => ['nullable', 'string', 'max:255'],
+            'passengers.*.ktp_file' => ['nullable', 'file', 'max:10240'],
             'passengers.*.notes' => ['nullable', 'string'],
             'transports' => ['nullable', 'array'],
             'transports.*.direction' => ['nullable', 'in:departure,return'],
@@ -89,16 +90,33 @@ class TravelRequestController extends Controller
             'notes' => $validated['travel_plan'] ?? $validated['notes'] ?? null,
         ]);
 
-        // Simpan data penumpang jika dikirim
+        // Simpan data penumpang jika dikirim (termasuk penyimpanan file KTP asli ke storage)
         if (!empty($validated['passengers'])) {
-            foreach ($validated['passengers'] as $passengerData) {
+            foreach ($validated['passengers'] as $idx => $passengerData) {
+                $ktpPath = null;
+
+                // 1. Cek apakah ada file biner yang diunggah langsung melalui form
+                if ($request->hasFile("passengers.{$idx}.ktp_file")) {
+                    $file = $request->file("passengers.{$idx}.ktp_file");
+                    $ext = $file->getClientOriginalExtension() ?: 'png';
+                    $safeName = 'ktp_' . time() . '_' . $idx . '_' . Str::slug($passengerData['name'] ?? 'penumpang') . '.' . $ext;
+                    $ktpPath = $file->storeAs('ktp_files', $safeName, 'public');
+                } elseif ($request->hasFile("ktp_files.{$idx}")) {
+                    $file = $request->file("ktp_files.{$idx}");
+                    $ext = $file->getClientOriginalExtension() ?: 'png';
+                    $safeName = 'ktp_' . time() . '_' . $idx . '_' . Str::slug($passengerData['name'] ?? 'penumpang') . '.' . $ext;
+                    $ktpPath = $file->storeAs('ktp_files', $safeName, 'public');
+                } elseif (!empty($passengerData['ktp_file_path'])) {
+                    $ktpPath = $passengerData['ktp_file_path'];
+                }
+
                 $travelRequest->passengers()->create([
                     'name' => $passengerData['name'],
                     'nik' => $passengerData['nik'],
                     'phone' => $passengerData['phone'] ?? null,
                     'department' => $passengerData['department'] ?? null,
                     'division' => $passengerData['division'] ?? null,
-                    'ktp_file_path' => $passengerData['ktp_file_path'] ?? null,
+                    'ktp_file_path' => $ktpPath,
                     'notes' => $passengerData['notes'] ?? null,
                 ]);
             }

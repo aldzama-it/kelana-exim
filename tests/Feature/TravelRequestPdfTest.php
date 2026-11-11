@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TravelRequestPdfTest extends TestCase
@@ -111,4 +113,48 @@ class TravelRequestPdfTest extends TestCase
         $previewResponse->assertSee('LAMPIRAN IDENTITAS');
         $previewResponse->assertSee('KARTU TANDA PENDUDUK (KTP)');
     }
+
+    /**
+     * Memastikan unggahan file biner KTP berhasil disimpan dan di-render sebagai Base64 image pada halaman 2 PDF.
+     */
+    public function test_it_uploads_binary_ktp_and_renders_image_in_pdf(): void
+    {
+        Storage::fake('public');
+
+        $wanda = User::where('username', 'wanda')->first();
+        $fakeKtp = UploadedFile::fake()->image('ktp_custom.jpg', 600, 400);
+
+        $postResponse = $this->actingAs($wanda)->post('/api/v1/travel-requests', [
+            'purpose' => 'Site Visit',
+            'department' => 'Operations',
+            'project_name' => 'Project Kiln Tuban',
+            'origin_city' => 'Surabaya, Jawa Timur',
+            'destination_city' => 'Tuban, Jawa Timur',
+            'departure_date' => '2026-11-25',
+            'priority' => 'Normal',
+            'passengers' => [
+                [
+                    'name' => 'Budi Santoso',
+                    'nik' => '3525010000000002',
+                    'department' => 'Operations',
+                    'division' => 'Site Operations',
+                    'ktp_file' => $fakeKtp,
+                ],
+            ],
+        ]);
+
+        $postResponse->assertStatus(201);
+        $travelRequestId = $postResponse->json('data.travel_request.id');
+        $passenger = \App\Models\TravelRequestPassenger::where('travel_request_id', $travelRequestId)->first();
+
+        $this->assertNotNull($passenger->ktp_file_path);
+        Storage::disk('public')->assertExists($passenger->ktp_file_path);
+
+        // Akses preview PDF
+        $previewResponse = $this->actingAs($wanda)->get("/travel-requests/{$travelRequestId}/preview");
+        $previewResponse->assertStatus(200);
+        $previewResponse->assertSee('data:image/jpeg;base64,');
+        $previewResponse->assertSee('Budi Santoso');
+    }
 }
+

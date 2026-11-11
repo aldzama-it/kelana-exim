@@ -1216,49 +1216,55 @@ export default function TravelRequestForm({
                     : []),
             ];
 
-            const payload = {
-                purpose: formData.purpose,
-                project_name: formData.projectName,
-                department: passengers[0]?.department || 'Sales & Engineering',
-                origin_city: formData.originCity,
-                destination_city: formData.destinationCity,
-                departure_date: formData.departureDate,
-                departure_time: formData.departureTime,
-                return_date: formData.isRoundTrip ? formData.returnDate : null,
-                priority: formData.priority,
-                travel_plan: formData.travelPlan,
-                passengers: passengers.map((p) => ({
-                    name: p.name,
-                    nik: p.nik,
-                    phone: p.phone,
-                    department: p.department,
-                    division: p.division,
-                    ktp_file_path: p.ktpFileName,
-                    notes: '',
-                })),
-                transports: allTransports.map((t) => ({
-                    direction: t.direction,
-                    transport_mode: t.transportMode,
-                    origin_location: t.originLocation,
-                    destination_location: t.destinationLocation,
-                    departure_date: t.departureDate,
-                    departure_time: t.departureTime,
-                    time_preference: t.timePreference,
-                    carrier_name: t.carrierName,
-                    class_preference: t.classPreference,
-                    notes: t.notes,
-                })),
-            };
+            const formDataObj = new FormData();
+            formDataObj.append('purpose', formData.purpose);
+            formDataObj.append('project_name', formData.projectName);
+            formDataObj.append('department', passengers[0]?.department || 'Sales & Engineering');
+            formDataObj.append('origin_city', formData.originCity);
+            formDataObj.append('destination_city', formData.destinationCity);
+            formDataObj.append('departure_date', formData.departureDate);
+            if (formData.departureTime) {
+                formDataObj.append('departure_time', formData.departureTime);
+            }
+            if (formData.isRoundTrip && formData.returnDate) {
+                formDataObj.append('return_date', formData.returnDate);
+            }
+            formDataObj.append('priority', formData.priority);
+            formDataObj.append('travel_plan', formData.travelPlan);
+
+            passengers.forEach((p, idx) => {
+                formDataObj.append(`passengers[${idx}][name]`, p.name);
+                formDataObj.append(`passengers[${idx}][nik]`, p.nik);
+                if (p.phone) formDataObj.append(`passengers[${idx}][phone]`, p.phone);
+                if (p.department) formDataObj.append(`passengers[${idx}][department]`, p.department);
+                if (p.division) formDataObj.append(`passengers[${idx}][division]`, p.division);
+                if (p.ktpFileName) formDataObj.append(`passengers[${idx}][ktp_file_path]`, p.ktpFileName);
+                if (p.ktpFile) {
+                    formDataObj.append(`passengers[${idx}][ktp_file]`, p.ktpFile, p.ktpFile.name);
+                }
+            });
+
+            allTransports.forEach((t, idx) => {
+                formDataObj.append(`transports[${idx}][direction]`, t.direction);
+                formDataObj.append(`transports[${idx}][transport_mode]`, t.transportMode);
+                if (t.originLocation) formDataObj.append(`transports[${idx}][origin_location]`, t.originLocation);
+                if (t.destinationLocation) formDataObj.append(`transports[${idx}][destination_location]`, t.destinationLocation);
+                if (t.departureDate) formDataObj.append(`transports[${idx}][departure_date]`, t.departureDate);
+                if (t.departureTime) formDataObj.append(`transports[${idx}][departure_time]`, t.departureTime);
+                if (t.timePreference) formDataObj.append(`transports[${idx}][time_preference]`, t.timePreference);
+                if (t.carrierName) formDataObj.append(`transports[${idx}][carrier_name]`, t.carrierName);
+                if (t.classPreference) formDataObj.append(`transports[${idx}][class_preference]`, t.classPreference);
+                if (t.notes) formDataObj.append(`transports[${idx}][notes]`, t.notes);
+            });
 
             const response = await fetch('/api/v1/travel-requests', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
                 },
-                body: JSON.stringify(payload),
+                body: formDataObj,
             });
 
             const result = await response.json();
